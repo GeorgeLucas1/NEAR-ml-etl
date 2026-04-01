@@ -96,6 +96,7 @@
 
 <script>
 import { ref, computed, onMounted, nextTick } from 'vue'
+import { escapeHtml, sanitizeMetricValue, validateApiResponse } from '@/utils/security.js'
 
 export default {
   name: 'System',
@@ -106,7 +107,7 @@ export default {
     let map = null
 
     const formatBytes = (bytes) => {
-      if (!bytes) return '0 B'
+      if (!bytes || typeof bytes !== 'number') return '0 B'
       if (bytes < 1024) return bytes + ' B'
       if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB'
       if (bytes < 1073741824) return (bytes / 1048576).toFixed(2) + ' MB'
@@ -114,12 +115,14 @@ export default {
     }
 
     const getStatusClass = (val, warn = 80, crit = 95) => {
+      if (typeof val !== 'number') return 'status-ok'
       if (val >= crit) return 'status-crit'
       if (val >= warn) return 'status-warn'
       return 'status-ok'
     }
 
     const getStatusText = (val, warn = 80, crit = 95) => {
+      if (typeof val !== 'number') return '● NORMAL'
       if (val >= crit) return '● CRÍTICO'
       if (val >= warn) return '● ALERTA'
       return '● NORMAL'
@@ -131,35 +134,35 @@ export default {
       return [
         {
           label: 'CPU USAGE',
-          value: (m.cpu_usage?.toFixed(1) || '0') + '%',
+          value: (sanitizeMetricValue(m.cpu_usage, 'number')?.toFixed(1) || '0') + '%',
           statusClass: getStatusClass(m.cpu_usage),
           statusText: getStatusText(m.cpu_usage),
-          pct: Math.min(m.cpu_usage || 0, 100),
+          pct: Math.min(sanitizeMetricValue(m.cpu_usage, 'number') || 0, 100),
         },
         {
           label: 'CPU TEMPERATURE',
-          value: (m.cpu_temp?.toFixed(1) || '0') + '°C',
+          value: (sanitizeMetricValue(m.cpu_temp, 'number')?.toFixed(1) || '0') + '°C',
           statusClass: getStatusClass(m.cpu_temp, 50, 80),
           statusText: getStatusText(m.cpu_temp, 50, 80),
-          pct: Math.min(((m.cpu_temp || 0) / 120) * 100, 100),
+          pct: Math.min(((sanitizeMetricValue(m.cpu_temp, 'number') || 0) / 120) * 100, 100),
         },
         {
           label: 'RAM USAGE',
-          value: (m.ram_usage?.toFixed(1) || '0') + '%',
+          value: (sanitizeMetricValue(m.ram_usage, 'number')?.toFixed(1) || '0') + '%',
           statusClass: getStatusClass(m.ram_usage),
           statusText: getStatusText(m.ram_usage),
-          pct: Math.min(m.ram_usage || 0, 100),
+          pct: Math.min(sanitizeMetricValue(m.ram_usage, 'number') || 0, 100),
         },
         {
           label: 'NET UPLOAD',
-          value: formatBytes(m.network?.bytes_sent),
+          value: formatBytes(sanitizeMetricValue(m.network?.bytes_sent, 'number')),
           statusClass: 'status-ok',
           statusText: '● ATIVO',
           pct: 0,
         },
         {
           label: 'NET DOWNLOAD',
-          value: formatBytes(m.network?.bytes_recv),
+          value: formatBytes(sanitizeMetricValue(m.network?.bytes_recv, 'number')),
           statusClass: 'status-ok',
           statusText: '● ATIVO',
           pct: 0,
@@ -171,19 +174,28 @@ export default {
       try {
         const resp = await fetch('http://ip-api.com/json/')
         const data = await resp.json()
+        
+        // Validate API response
+        if (!validateApiResponse(data, ['city', 'country', 'query', 'lat', 'lon'])) {
+          console.warn('Invalid location API response')
+          return
+        }
+        
         if (data.status === 'success') {
           location.value = {
-            city: data.city,
-            country: data.country,
-            ip: data.query,
-            isp: data.isp,
-            lat: data.lat,
-            lon: data.lon,
+            city: escapeHtml(data.city),
+            country: escapeHtml(data.country),
+            ip: escapeHtml(data.query),
+            isp: escapeHtml(data.isp),
+            lat: sanitizeMetricValue(data.lat, 'number'),
+            lon: sanitizeMetricValue(data.lon, 'number'),
           }
           await nextTick()
           initMap()
         }
-      } catch {}
+      } catch (e) {
+        console.error('Location fetch error:', e)
+      }
     }
 
     const initMap = async () => {
@@ -206,8 +218,12 @@ export default {
         iconAnchor: [6, 6],
       })
 
+      // XSS-safe popup content
+      const safeCity = escapeHtml(location.value.city)
+      const safeCountry = escapeHtml(location.value.country)
+      
       L.marker([location.value.lat, location.value.lon], { icon }).addTo(map)
-        .bindPopup(`<span style="font-family:monospace;font-size:12px;color:#00c8ff">${location.value.city}, ${location.value.country}</span>`)
+        .bindPopup(`<span style="font-family:monospace;font-size:12px;color:#00c8ff">${safeCity}, ${safeCountry}</span>`)
         .openPopup()
     }
 
