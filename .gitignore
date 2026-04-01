@@ -1,0 +1,111 @@
+# PC Health Monitor - Git Ignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+*.egg-info/
+dist/
+build/
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+*.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# Logs
+logs/
+*.log
+.log
+
+# Data
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/pids/
+
+# ML Models
+ml/models/*.joblib
+ml/models/*.pkl
+ml/models/*.model
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker
+.docker/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Rust
+collector/target/
+collector/Cargo.lock
+
+# Go
+api/vendor/
+api/*.exe
+api/*.exe~
+
+# Temp files
+*.tmp
+*.bak
+*.swp
+.*.swp
+*~
+
+# Streamlit (old)
+.streamlit/
+
+# Pytest
+.pytest_cache/
+
+# Coverage
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+*.py,cover
+
+# mypy
+.mypy_cache/
+
+# Jupyter
+.ipynb_checkpoints
+
+# Secrets
+*.key
+*.pem
+*.crt
+secrets/

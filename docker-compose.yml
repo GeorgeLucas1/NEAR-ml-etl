@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: pc-health-api
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - DB_PATH=/app/data/metrics.db
+    restart: unless-stopped
+
+  collector:
+    build:
+      context: ./collector
+      dockerfile: Dockerfile
+    container_name: pc-health-collector
+    depends_on:
+      - api
+    environment:
+      - API_URL=http://api:8080
+      - INTERVAL=5
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pc-health-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    environment:
+      - API_URL=http://api:8080
+    restart: unless-stopped
+
+  pipeline:
+    build:
+      context: ./pipeline
+      dockerfile: Dockerfile
+    container_name: pc-health-pipeline
+    depends_on:
+      - api
+    volumes:
+      - ./data:/app/data
+    environment:
+      - DB_PATH=/app/data/metrics.db
+    restart: unless-stopped
+
+  ml:
+    build:
+      context: ./ml
+      dockerfile: Dockerfile
+    container_name: pc-health-ml
+    depends_on:
+      - pipeline
+    volumes:
+      - ./data:/app/data
+      - ./ml/models:/app/models
+    environment:
+      - DB_PATH=/app/data/metrics.db
+    restart: unless-stopped

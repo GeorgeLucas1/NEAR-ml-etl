@@ -1,0 +1,14 @@
+pandas
+numpy
+scikit-learn
+joblib
+schedule
+python-dotenv
+loguru
+pytest
+streamlit
+streamlit-autorefresh
+plotly
+requests
+websocket-client
+psutil
